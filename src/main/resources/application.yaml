@@ -1,0 +1,14 @@
+server:
+  port: 8080
+#  servlet:
+#    context-path: /security-springboot
+spring:
+  application:
+    name: security-springboot
+  datasource:
+    url: jdbc:mysql://cdb-0trgaicq.bj.tencentcdb.com:10038/xc_user?serverTimezone=UTC&useSSL=false&useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true
+    username: root
+    password: 323900llmT
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  main:
+    allow-bean-definition-overriding: true
