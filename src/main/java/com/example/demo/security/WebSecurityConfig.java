@@ -1,9 +1,13 @@
 package com.example.demo.security;
 
+import com.example.demo.filter.AuthenticationTokenFilter;
+import com.example.demo.utils.JwtUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -17,26 +21,28 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-    //定义用户信息服务（查询用户信息）
-//    @Bean
-//    public UserDetailsService userDetailsService(){
-//        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
-//        manager.createUser(User.withUsername("zhangsan").password("123").authorities("p1").build());
-//        manager.createUser(User.withUsername("lisi").password("456").authorities("p2").build());
-//        return manager;
-//    }
+    @Autowired
+    SpringDataUserDetailsService springDataUserDetailsService;
+
+    @Autowired
+    AuthenticationTokenFilter authenticationTokenFilter;
+
 
     @Bean
     @Override
@@ -47,14 +53,22 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     //定义解码器
     @Bean
     public PasswordEncoder passwordEncoder() {
-       // return NoOpPasswordEncoder.getInstance();
         return new BCryptPasswordEncoder();
     }
 
-    //定义登陆成功返回信息
+    //定义登陆成功返回信息，并且让用户之后请求后端API携带cookie获取认证信息
     private class AxiousAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
         @Override
         public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+
+            // 登录成功则给浏览器设置cookie，下次访问服务器的时候携带该cookie以获取认证的信息
+            String username = request.getParameter("username");
+            Map<String,Object> attrMap = new HashMap<>();
+            attrMap.put("username",username);
+            String encode = JwtUtil.encode("1139315314@qq.com", attrMap, null);
+            Cookie cookie = new Cookie("accessToken", encode);
+            cookie.setPath("/");
+            response.addCookie(cookie);
 
             //User user = (User)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             System.out.println("商户[" + SecurityContextHolder.getContext().getAuthentication().getPrincipal() +"]登陆成功！");
@@ -100,41 +114,46 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-                //解决跨域
+                // 解决跨域
+                .cors()
+                .and()
                 .csrf().disable()
-                //要以这个开始
+
+                // 对请求进行授权
                 .authorizeRequests()
-//                .antMatchers("/r/r1").hasAuthority("p1")
-//                .antMatchers("/r/r2").hasAuthority("p2")
-                //只允许登录
+                // 允许放行以下请求
                 .antMatchers("/users/login_page", "/register","/ws/*","/websocket/*").permitAll()
-                //所有/r/**的请求必须认证通过
-//                .antMatchers("/r/**").authenticated()
-                //除了/r/**，其他的请求可以访问
-//                .anyRequest().permitAll()
-                //其余方法都要认证
+                // 其他全部请求需要认证
                 .anyRequest().authenticated()
                 .and()
-                //允许表单登录
+
+                // 允许表单登录
                 .formLogin()
-                //登录页面(不会再跳转到默认地址)
-                .loginPage("/users/login_page")
-                .successHandler(new AxiousAuthSuccessHandler())
-                .failureHandler(new AxiousAuthFailHandler())
-                //制定登录处理的url，也就是用户名、密码表单提交的目标路径
+                // 制定登录处理的url，也就是用户名、密码表单提交的目标路径
                 .loginProcessingUrl("/login").usernameParameter("username").passwordParameter("password")
-                //自定义登录成功的页面地址
-                .successForwardUrl("/login-success")
-                //允许所有用户访问我们的登录页
+                .successHandler(new AxiousAuthSuccessHandler())  // 成功如何处理
+                .failureHandler(new AxiousAuthFailHandler())     // 失败如何处理
+                // 允许所有用户访问我们的登录页
                 .permitAll()
-
-
-        .and()
-        .sessionManagement()
-        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 .and()
+
+                .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .and()
+
                 .logout()
                 //自定义退出url
                 .logoutUrl("/logout");
+
+        // 添加过滤器
+        http.addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
+    }
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder builder) throws Exception {
+        // 禁用默认规则
+        //super.configure(auth);
+        // 验证密码
+        builder.userDetailsService(springDataUserDetailsService).passwordEncoder(passwordEncoder());
     }
 }

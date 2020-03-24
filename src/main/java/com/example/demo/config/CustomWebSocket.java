@@ -96,7 +96,8 @@ public class CustomWebSocket {
             try {
                 session.getAsyncRemote().sendText(message);
             } catch (Exception e) {
-                e.printStackTrace();
+                System.out.println(e.getMessage());
+                throw e;
             }
         }
     }
