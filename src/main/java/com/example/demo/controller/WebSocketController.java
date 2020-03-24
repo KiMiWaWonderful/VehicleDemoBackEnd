@@ -3,6 +3,8 @@ package com.example.demo.controller;
 import com.alibaba.fastjson.JSON;
 import com.example.demo.config.CustomWebSocket;
 import com.example.demo.mapper.TraceRepository;
+import com.example.demo.netty.NettyClient;
+import com.example.demo.netty.NettyClientHandler;
 import com.example.demo.pojo.CarData;
 import com.example.demo.pojo.Location;
 import com.example.demo.pojo.Point;
@@ -10,6 +12,7 @@ import com.example.demo.pojo.Trace;
 import com.example.demo.utils.ResponseResult;
 import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.data.geo.Point;
+import org.springframework.data.annotation.QueryAnnotation;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,44 +33,15 @@ public class WebSocketController {
     @Autowired
     private TraceRepository traceRepository;
 
+    @Autowired
+    NettyClient nettyClient;
+
+
     @RequestMapping("/sendLocationData")
     public String testLocationData() throws Exception{
 
-        // 开一个线程负责接收服务器端的消息
-        new Thread(){
-            @Override
-            public void run() {
-                Socket socket = null;
-                try {
-                    // 连接服务器端
-                    socket = new Socket("127.0.0.1",9001);
-                    // 获取流对象
-                    InputStream is = socket.getInputStream();
-
-                    byte[] bytes = new byte[1024];
-                    int len = 0;
-                    // 服务器定时发送数据，客户端不断接受
-                    while((len = is.read(bytes)) != -1) {
-                        // 处理数据
-                        String data = new String(bytes, 0, len);
-                        String[] strings = data.split(",");
-                        double lng = Double.parseDouble(strings[0]);
-                        double lat = Double.parseDouble(strings[1]);
-                        Point point = new Point(lng,lat);
-                        // 往浏览器发送数据
-                        webSocket.sendOneMessage("location", JSON.toJSONString(point));
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    try {
-                        socket.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }.start();
+        // 开一个线程负责接收服务器端的消息，并且发送给浏览器
+        new Thread(nettyClient).run();
 
         return "websocket群体发送LocationData！";
     }
