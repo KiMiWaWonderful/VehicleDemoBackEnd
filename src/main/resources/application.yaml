@@ -6,7 +6,7 @@ spring:
   application:
     name: security-springboot
   datasource:
-    url: jdbc:mysql://localhost:3306/ditu?characterEncoding=utf-8&serverTimezone=UTC
+    url: jdbc:mysql://47.115.13.115:3306/ditu?characterEncoding=utf-8&serverTimezone=UTC
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -14,4 +14,4 @@ spring:
     allow-bean-definition-overriding: true
   data:
     mongodb:
-      uri: mongodb://localhost:27017/ditu
+      uri: mongodb://47.115.13.115:27017/ditu

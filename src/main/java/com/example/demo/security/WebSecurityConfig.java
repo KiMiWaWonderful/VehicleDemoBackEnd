@@ -122,7 +122,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 // 对请求进行授权
                 .authorizeRequests()
                 // 允许放行以下请求
-                .antMatchers("/users/login_page", "/register","/ws/*","/websocket/*").permitAll()
+                .antMatchers("/users/login_page", "/register","/ws/*","/websocket/*","/login","/register").permitAll()
                 // 其他全部请求需要认证
                 .anyRequest().authenticated()
                 .and()

@@ -22,7 +22,7 @@ public class NettyClient implements Runnable {
     // 以下两个应当从配置文件中读取
     @Value("127.0.0.1")
     private String host;
-    @Value("9001")
+    @Value("9000")
     private int port;
 
 

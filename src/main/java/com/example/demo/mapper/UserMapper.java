@@ -8,12 +8,12 @@ import tk.mybatis.mapper.common.Mapper;
 
 public interface UserMapper extends Mapper<User> {
 
-    @Insert("insert into xc_user.t_user (id,username,password) VALUES (#{id,jdbcType=VARCHAR},#{username,jdbcType=VARCHAR},#{password,jdbcType=VARCHAR})")
+    @Insert("insert into t_user (id,username,password) VALUES (#{id,jdbcType=VARCHAR},#{username,jdbcType=VARCHAR},#{password,jdbcType=VARCHAR})")
     void addUser(User user);
 
-    @Select("select * from xc_user.t_user where id = #{id}")
+    @Select("select * from t_user where id = #{id}")
     User getUserById(@Param("id")String id);
 
-    @Select("select count(username) as count from xc_user.t_user where username = #{username}")
+    @Select("select count(username) as count from t_user where username = #{username}")
     int getNameNumber(@Param("username")String username);
 }
