@@ -1,2 +1,2 @@
 # VehicleDemoBackEnd
-比赛用到的项目，后端。
+车联网项目，后端。
